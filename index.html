@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <title>برنامه محاسب بل ماهوار شرکت برشنا - مخصوص منازل مشترک</title>
+    <style>
+        @font-face {
+            font-family: nazanin;
+            src: url(assets/fonts/Bahij\ Nazanin-Bold.ttf);
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+        *{
+            font-family: nazanin;
+            font-size: 12pt;
+        }
+        h1 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        #result_div {
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h1>برنامه محاسب بل ماهوار شرکت برشنا </h1>
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <form id="billForm">
+                                    <div class="form-group">
+                                        <label for="fam_count">تعداد همسایه ها</label>
+                                        <input id="fam_count" class="form-control" type="number" name="fam_count" placeholder="تعداد فامیل را وارد کنید">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="prev_counter">درج گذشته</label>
+                                        <input id="prev_counter" class="form-control" type="number" name="prev_counter" placeholder="درج گذشته را وارد کنید">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="curr_counter">درج حالیه</label>
+                                        <input id="curr_counter" class="form-control" type="number" name="curr_counter" placeholder="درج حالیه را وارد کنید">
+                                    </div>
+                                    <button type="button" class="btn btn-success w-100" id="btn_calc">محاسبه</button>
+                                </form>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="result_div" class="text-center">
+                                    <h5>نتیجه محاسبه</h5>
+                                    <p id="result_text">اینجا نتیجه نمایش داده می‌شود</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="assets/plugins/jquery/jquery.min.js"></script>
+    <script src="assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            function calculateBill(consumption, fam_count) {
+                // Pricing tiers
+                const tiers = [
+                    { limit: 100, rate: 2.5 },
+                    { limit: 100, rate: 3.75 },
+                    { limit: 150, rate: 6.25 },
+                    { limit: 650, rate: 8.75 }
+                ];
+
+                // Adjust tier limits for each family
+                let adjustedTiers = tiers.map(tier => ({
+                    limit: tier.limit / fam_count,
+                    rate: tier.rate
+                }));
+
+                let remaining = consumption;
+                let totalBill = 0;
+
+                for (let tier of adjustedTiers) {
+                    if (remaining > 0) {
+                        let tierUsage = Math.min(remaining, tier.limit); // Usage in this tier
+                        totalBill += tierUsage * tier.rate; // Cost for this tier
+                        remaining -= tierUsage; // Reduce remaining consumption
+                    }
+                }
+
+                return totalBill;
+            }
+
+            $('#btn_calc').on('click', function() {
+                // Fetch input values
+                var fam_count = parseFloat($('#fam_count').val()) || 0;
+                var prev_counter = parseFloat($('#prev_counter').val()) || 0;
+                var curr_counter = parseFloat($('#curr_counter').val()) || 0;
+
+                if (fam_count <= 0 || curr_counter < prev_counter) {
+                    $('#result_text').html('<p class="text-danger">اطلاعات وارد شده معتبر نیست.</p>');
+                    return;
+                }
+
+                var consumption = curr_counter - prev_counter;
+                var totalBill = calculateBill(consumption, fam_count);
+
+                // Display result
+                let resultHtml = `
+                    <p><strong>مصرف کل:</strong> ${consumption.toFixed(2)} کیلووات</p>
+                    <p><strong>هزینه کل:</strong> ${totalBill.toFixed(2)} افغانی</p>
+                `;
+
+                $('#result_text').html(resultHtml);
+            });
+        });
+    </script>
+</body>
+</html>
