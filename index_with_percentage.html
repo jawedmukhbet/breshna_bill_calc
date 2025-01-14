@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <title>BRESHNA Co. Ltd Monthly Bill Calculator</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        h1 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        #result_div {
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+        }
+        .tier-row input {
+            width: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h1>BRESHNA Co. Ltd Monthly Bill Calculator</h1>
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <form id="billForm">
+                                    <div class="form-group">
+                                        <label for="fam_count">تعداد همسایه ها</label>
+                                        <input id="fam_count" class="form-control" type="number" name="fam_count" placeholder="تعداد فامیل را وارد کنید">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="prev_counter">درج گذشته</label>
+                                        <input id="prev_counter" class="form-control" type="number" name="prev_counter" placeholder="درج گذشته را وارد کنید">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="curr_counter">درج حالیه</label>
+                                        <input id="curr_counter" class="form-control" type="number" name="curr_counter" placeholder="درج حالیه را وارد کنید">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="total_consumption">کل مصرف (کیلووات)</label>
+                                        <input id="total_consumption" class="form-control" type="number" name="total_consumption" placeholder="کل مصرف برق">
+                                    </div>
+                                    <button type="button" class="btn btn-success w-100" id="btn_calc">محاسبه</button>
+                                </form>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="result_div" class="text-center">
+                                    <h5>نتیجه محاسبه</h5>
+                                    <p id="result_text">اینجا نتیجه نمایش داده می‌شود</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h5>افزودن دسته بندی جدید</h5>
+                                <table id="tierTable" class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>حد مصرف (کیلووات)</th>
+                                            <th>قیمت (افغانی)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tierTableBody">
+                                        <tr class="tier-row">
+                                            <td><input type="number" class="tier-limit" placeholder="حد مصرف"></td>
+                                            <td><input type="number" class="tier-rate" placeholder="قیمت"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <button type="button" class="btn btn-primary" id="btn_add_tier">افزودن دسته بندی</button>
+                                <button type="button" class="btn btn-success mt-2" id="btn_save_tiers">ذخیره پیکربندی</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/plugins/jquery/jquery.min.js"></script>
+    <script src="assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            function loadTiers() {
+                const tiers = JSON.parse(localStorage.getItem('tiers')) || [];
+                $('#tierTableBody').empty();
+                tiers.forEach(tier => {
+                    $('#tierTableBody').append(`
+                        <tr class="tier-row">
+                            <td><input type="number" class="tier-limit" value="${tier.limit}" placeholder="حد مصرف"></td>
+                            <td><input type="number" class="tier-rate" value="${tier.rate}" placeholder="قیمت"></td>
+                        </tr>
+                    `);
+                });
+            }
+
+            function saveTiers() {
+                const tiersToSave = [];
+                $('.tier-row').each(function () {
+                    const limit = parseFloat($(this).find('.tier-limit').val());
+                    const rate = parseFloat($(this).find('.tier-rate').val());
+                    if (!isNaN(limit) && !isNaN(rate)) {
+                        tiersToSave.push({ limit, rate });
+                    }
+                });
+
+                if (tiersToSave.length > 0) {
+                    localStorage.setItem('tiers', JSON.stringify(tiersToSave));
+                    alert('پیکربندی با موفقیت ذخیره شد!');
+                } else {
+                    alert('هیچ دسته‌ای برای ذخیره وجود ندارد!');
+                }
+            }
+
+            $('#btn_add_tier').on('click', function() {
+                $('#tierTableBody').append(`
+                    <tr class="tier-row">
+                        <td><input type="number" class="tier-limit" placeholder="حد مصرف"></td>
+                        <td><input type="number" class="tier-rate" placeholder="قیمت"></td>
+                    </tr>
+                `);
+            });
+
+            $('#btn_save_tiers').on('click', function() {
+                saveTiers();
+            });
+
+            function calculateBill(consumption, fam_count) {
+                const tiers = JSON.parse(localStorage.getItem('tiers')) || [];
+
+                if (tiers.length === 0) {
+                    alert('هیچ دسته‌ای ذخیره نشده است!');
+                    return 0;
+                }
+
+                let adjustedTiers = tiers.map(tier => ({
+                    limit: tier.limit / fam_count,
+                    rate: tier.rate
+                }));
+
+                let remaining = consumption;
+                let totalBill = 0;
+
+                for (let tier of adjustedTiers) {
+                    if (remaining > 0) {
+                        let tierUsage = Math.min(remaining, tier.limit);
+                        totalBill += tierUsage * tier.rate;
+                        remaining -= tierUsage;
+                    }
+                }
+
+                return totalBill;
+            }
+
+            $('#btn_calc').on('click', function() {
+                var fam_count = parseFloat($('#fam_count').val()) || 0;
+                var prev_counter = parseFloat($('#prev_counter').val()) || 0;
+                var curr_counter = parseFloat($('#curr_counter').val()) || 0;
+                var total_consumption = parseFloat($('#total_consumption').val()) || 0;
+
+                if (fam_count <= 0 || curr_counter < prev_counter || total_consumption <= 0) {
+                    $('#result_text').html('<p class="text-danger">اطلاعات وارد شده معتبر نیست.</p>');
+                    return;
+                }
+
+                var consumption = curr_counter - prev_counter;
+                var totalBill = calculateBill(consumption, fam_count);
+                var consumptionPercentage = (consumption / total_consumption) * 100;
+
+                let resultHtml = `
+                    <p><strong>مصرف کل:</strong> ${consumption.toFixed(2)} کیلووات</p>
+                    <p><strong>هزینه کل:</strong> ${totalBill.toFixed(2)} افغانی</p>
+                    <p><strong>درصد مصرف:</strong> ${consumptionPercentage.toFixed(2)}%</p>
+                `;
+
+                $('#result_text').html(resultHtml);
+            });
+
+            loadTiers();
+        });
+    </script>
+</body>
+</html>

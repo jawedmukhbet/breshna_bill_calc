@@ -4,18 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-    <title>برنامه محاسب بل ماهوار شرکت برشنا - مخصوص منازل مشترک</title>
+    <title>BRESHNA Co. Ltd Monthly Bill Calculator</title>
     <style>
-        @font-face {
-            font-family: nazanin;
-            src: url(assets/fonts/Bahij\ Nazanin-Bold.ttf);
-        }
         body {
             background-color: #f8f9fa;
-        }
-        *{
-            font-family: nazanin;
-            font-size: 12pt;
         }
         h1 {
             margin-bottom: 20px;
@@ -31,13 +23,19 @@
             border-radius: 5px;
             margin-top: 20px;
         }
+        table {
+            width: 100%;
+        }
+        .tier-row input {
+            width: 80px;
+        }
     </style>
 </head>
 <body>
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <h1>برنامه محاسب بل ماهوار شرکت برشنا </h1>
+                <h1>BRESHNA Co. Ltd Monthly Bill Calculator</h1>
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="row">
@@ -65,24 +63,93 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h5>افزودن دسته بندی جدید</h5>
+                                <table id="tierTable" class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>حد مصرف (کیلووات)</th>
+                                            <th>قیمت (افغانی)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tierTableBody">
+                                        <tr class="tier-row">
+                                            <td><input type="number" class="tier-limit" placeholder="حد مصرف"></td>
+                                            <td><input type="number" class="tier-rate" placeholder="قیمت"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <button type="button" class="btn btn-primary" id="btn_add_tier">افزودن دسته بندی</button>
+                                <button type="button" class="btn btn-success mt-2" id="btn_save_tiers">ذخیره پیکربندی</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
     <script src="assets/plugins/jquery/jquery.min.js"></script>
     <script src="assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Load saved tiers from localStorage
+            function loadTiers() {
+                const tiers = JSON.parse(localStorage.getItem('tiers')) || [];
+                $('#tierTableBody').empty(); // Clear the existing rows
+                tiers.forEach(tier => {
+                    $('#tierTableBody').append(`
+                        <tr class="tier-row">
+                            <td><input type="number" class="tier-limit" value="${tier.limit}" placeholder="حد مصرف"></td>
+                            <td><input type="number" class="tier-rate" value="${tier.rate}" placeholder="قیمت"></td>
+                        </tr>
+                    `);
+                });
+            }
+
+            // Save tiers to localStorage
+            function saveTiers() {
+                const tiersToSave = [];
+                $('.tier-row').each(function () {
+                    const limit = parseFloat($(this).find('.tier-limit').val());
+                    const rate = parseFloat($(this).find('.tier-rate').val());
+                    if (!isNaN(limit) && !isNaN(rate)) {
+                        tiersToSave.push({ limit, rate });
+                    }
+                });
+
+                if (tiersToSave.length > 0) {
+                    localStorage.setItem('tiers', JSON.stringify(tiersToSave));
+                    alert('پیکربندی با موفقیت ذخیره شد!');
+                } else {
+                    alert('هیچ دسته‌ای برای ذخیره وجود ندارد!');
+                }
+            }
+
+            // Add new tier row to table
+            $('#btn_add_tier').on('click', function() {
+                $('#tierTableBody').append(`
+                    <tr class="tier-row">
+                        <td><input type="number" class="tier-limit" placeholder="حد مصرف"></td>
+                        <td><input type="number" class="tier-rate" placeholder="قیمت"></td>
+                    </tr>
+                `);
+            });
+
+            // Save tier configurations
+            $('#btn_save_tiers').on('click', function() {
+                saveTiers();
+            });
+
+            // Calculate the bill using the configured tiers
             function calculateBill(consumption, fam_count) {
-                // Pricing tiers
-                const tiers = [
-                    { limit: 100, rate: 2.5 },
-                    { limit: 100, rate: 3.75 },
-                    { limit: 150, rate: 6.25 },
-                    { limit: 650, rate: 8.75 },
-                    { limit: 1000, rate: 10.0 }
-                ];
+                const tiers = JSON.parse(localStorage.getItem('tiers')) || []; // Load tiers from localStorage
+
+                if (tiers.length === 0) {
+                    alert('هیچ دسته‌ای ذخیره نشده است!');
+                    return 0;
+                }
 
                 // Adjust tier limits for each family
                 let adjustedTiers = tiers.map(tier => ({
@@ -105,7 +172,6 @@
             }
 
             $('#btn_calc').on('click', function() {
-                // Fetch input values
                 var fam_count = parseFloat($('#fam_count').val()) || 0;
                 var prev_counter = parseFloat($('#prev_counter').val()) || 0;
                 var curr_counter = parseFloat($('#curr_counter').val()) || 0;
@@ -126,6 +192,9 @@
 
                 $('#result_text').html(resultHtml);
             });
+
+            // Load tiers on page load
+            loadTiers();
         });
     </script>
 </body>
